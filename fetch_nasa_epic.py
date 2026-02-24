@@ -1,11 +1,10 @@
 import os
 import requests
 from datetime import datetime
+from utils import download_image
 
-def fetch_epic_images(api_key=None, count=10, output_dir="epic_images"):
-    if api_key is None:
-        api_key = os.environ['NASA_API_KEY']
 
+def fetch_epic_images(api_key, count=10, output_dir="epic_images"):
     url = "https://api.nasa.gov/EPIC/api/natural/images"
     params = {"api_key": api_key}
 
@@ -17,23 +16,24 @@ def fetch_epic_images(api_key=None, count=10, output_dir="epic_images"):
         print("Нет доступных изображений EPIC")
         return
 
-    os.makedirs(output_dir, exist_ok=True)
-
     for i, item in enumerate(data[:count], start=1):
         if "image" not in item or "date" not in item:
             continue
+
         image_name = item["image"]
         date = datetime.strptime(item["date"].split()[0], "%Y-%m-%d")
         year, month, day = date.strftime("%Y/%m/%d").split("/")
 
-        base_url = f"https://api.nasa.gov/EPIC/archive/natural/{year}/{month}/{day}/png/{image_name}.png"
-        img_response = requests.get(base_url, params={"api_key": api_key}, timeout=10)
-        img_response.raise_for_status()
+        base_url = (
+            f"https://api.nasa.gov/EPIC/archive/natural/{year}/{month}/{day}/png/{image_name}.png"
+        )
 
         file_path = os.path.join(output_dir, f"epic{i}.png")
-        with open(file_path, "wb") as f:
-            f.write(img_response.content)
-        print(f"Сохранено: {file_path}")
+
+        try:
+            download_image(base_url, file_path, params={"api_key": api_key})
+        except requests.RequestException as e:
+            print(f"Не удалось скачать {base_url}: {e}")
 
 
 if __name__ == "__main__":
