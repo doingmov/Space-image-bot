@@ -2,10 +2,8 @@ import os
 import requests
 from utils import download_image, get_file_extension
 
-def fetch_nasa_apod_images(api_key=None, count=30, output_dir="nasa_images"):
-    if api_key is None:
-        api_key = os.environ['NASA_API_KEY']
 
+def fetch_nasa_apod_images(api_key, count=30, output_dir="nasa_images"):
     url = "https://api.nasa.gov/planetary/apod"
     params = {"api_key": api_key, "count": count}
 
@@ -13,14 +11,15 @@ def fetch_nasa_apod_images(api_key=None, count=30, output_dir="nasa_images"):
     response.raise_for_status()
 
     data = response.json()
-    os.makedirs(output_dir, exist_ok=True)
 
     for i, item in enumerate(data, start=1):
         if item.get("media_type") != "image":
             continue
+
         img_url = item.get("url")
         ext = get_file_extension(img_url)
         file_path = os.path.join(output_dir, f"apod{i}{ext}")
+
         try:
             download_image(img_url, file_path)
         except requests.RequestException as e:
